@@ -41,10 +41,23 @@ func (a *App) Manifest(_ *Apps, name string) error {
 	return nil
 }
 
+func (a *App) Write(as *Apps, name string) error {
+	(*as)[name] = a
+	return nil
+}
+
 func (v *Versions) Page() ([]string, error) {
 	return []string{}, nil
 }
 
 func (v *Version) Manifest(_ *Versions, name string) error {
+	return nil
+}
+
+func (v *Version) Write(vs *Versions, name string) error {
+	if _, exists := (*vs)[name]; exists {
+		return hat.HttpError(409, name+" already exists.")
+	}
+	*(*vs)[name] = *v
 	return nil
 }
