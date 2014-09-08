@@ -1,0 +1,31 @@
+{
+	"ImportPath": "github.com/opentable/deploy",
+	"GoVersion": "go1.3",
+	"Deps": [
+		{
+			"ImportPath": "github.com/fzzy/radix/redis",
+			"Comment": "v0.4.5",
+			"Rev": "a0c550de042dfb76ff8cf285091e2fe7f3d48911"
+		},
+		{
+			"ImportPath": "github.com/opentable/hat",
+			"Rev": "f5623fe1597d42918185483bc1a833042867d679"
+		},
+		{
+			"ImportPath": "github.com/opentable/ot-go-lib/disco",
+			"Rev": "be8861a9f5a6a6f509f9321d4460c170b700db43"
+		},
+		{
+			"ImportPath": "github.com/opentable/ot-go-lib/env",
+			"Rev": "be8861a9f5a6a6f509f9321d4460c170b700db43"
+		},
+		{
+			"ImportPath": "github.com/opentable/ot-go-lib/logging",
+			"Rev": "be8861a9f5a6a6f509f9321d4460c170b700db43"
+		},
+		{
+			"ImportPath": "github.com/opentable/ot-go-lib/service",
+			"Rev": "be8861a9f5a6a6f509f9321d4460c170b700db43"
+		}
+	]
+}

@@ -1,0 +1,11 @@
+{
+	"ImportPath": "github.com/opentable/ot-go-lib/otlog",
+	"GoVersion": "go1.3",
+	"Deps": [
+		{
+			"ImportPath": "github.com/fzzy/radix/redis",
+			"Comment": "v0.3.4-37-gea6c917",
+			"Rev": "ea6c9175a01faf901291f460f988fac66f7b811e"
+		}
+	]
+}

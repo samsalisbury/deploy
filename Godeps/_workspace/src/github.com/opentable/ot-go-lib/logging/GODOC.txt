@@ -1,0 +1,201 @@
+PACKAGE DOCUMENTATION
+
+package logging
+    import "."
+
+    Package logging encodes the OpenTable logging proposals documented at
+    https://wiki.otcorp.opentable.com/display/CP/Log+Proposals It is
+    recommended that you read and understand that document before using this
+    package.
+
+    STATUS: ALPHA; The main interface of this package is likely to change
+    significantly over the next few weeks.
+
+    You can turn on debugging for this package by specifying the tag
+    "debuglogging" when you compile your app or library using this package.
+    This will emit detailed logging logs to stdout. NOTE: tag debuglogging
+    is not recommended in production, as it will result in large local log
+    files.
+
+    Minimalist usage example:
+
+	import (
+	    "github.com/opentable/ot-go-lib/logging"
+	    "net/http"
+	    "time"
+	)
+
+	var (
+	    timeout    = time.Duration(1)*time.Second
+	    targets    = []logging.Target{NewRedisTarget("redis-host.com", 6379, "mylist", timeout)}
+	    logConfig  = NewLogConfig("widgetservice", "localhost", 8080, targets)
+	    log        = logConfig.NewLog("interestingevents", 1)
+	    requestLog = logConfig.NewRequestLog(1)
+	)
+
+	Later...
+
+	func SomeHttpHandler(w http.ResponseWriter, r *HttpRequest) {
+	    statusCode := 200
+	    responseSize, err := w.Write([]byte("Hello, cruel world."))
+	    if err != nil {
+	        panic() // Don't really do this, it's just an example.
+	    }
+	    duration := calculateHowLongTheRequestTookToServe()
+	    requestLog.LogRequest(r, statusCode, responseSize, duration)
+	}
+
+CONSTANTS
+
+const (
+    FATAL = iota
+    ERROR = iota
+    WARN  = iota
+    INFO  = iota
+    TRACE = iota
+)
+
+TYPES
+
+type Entry interface {
+    Standard() *StandardFields
+    Optional() *OptionalFields
+    Request() *RequestFields
+    // contains filtered or unexported methods
+}
+    Entry encapsulates the data logged by a single log entry.
+
+type Log interface {
+    // Fatal logs a message with severity FATAL. It returns the log entry written. The *http.Requst parameter is documented above.
+    Fatal(message interface{}, req *http.Request) Entry
+    // Fatal logs a message with severity FATAL. The *http.Requst parameter is documented above.
+    Error(message interface{}, req *http.Request) Entry
+    // Fatal logs a message with severity FATAL. The *http.Requst parameter is documented above.
+    Warn(message interface{}, req *http.Request) Entry
+    // Fatal logs a message with severity FATAL. The *http.Requst parameter is documented above.
+    Info(message interface{}, req *http.Request) Entry
+    // Fatal logs a message with severity FATAL. The *http.Requst parameter is documented above.
+    Trace(message interface{}, req *http.Request) Entry
+    // contains filtered or unexported methods
+}
+    Log is a general-purpose logger.
+
+    Each of the main methods (Fatal(), Error(), Warn(), Info(), Trace())
+    takes an *http.Request as its second argument. You should provide the
+    current *http.Request wherever possible, as it may contain some
+    OpenTable-specific headers that will enrich the logs.
+
+type LogConfig struct {
+    // ServiceType is the name of your service. E.g. the Deployment Service has ServiceType = "deployment".
+    // It should be be an alphanumeric string, matching the regular expression "[A-Za-z0-9]+"
+    ServiceType string
+    // AppHost should be set to the host name of the machine where this instance of the app is accessible.
+    AppHost string
+    // AppPort should be set to the port number this instance of the app is available on.
+    // Currently, only a single port is supported.
+    AppPort int
+    // Targets contains the Targets this log will write to.
+    Targets []Target
+    // contains filtered or unexported fields
+}
+    LogConfig contains a basic set of log configuration. It acts as a
+    factory to create Logs and RequestLogs.
+
+func NewLogConfig(serviceType string, appHost string, appPort int, targets []Target) *LogConfig
+    NewLogConfig returns an initialised LogConfig. Please see the
+    documentation for type LogConfig for the meanings of the fields.
+
+func (c *LogConfig) NewLog(name string, version int) Log
+    NewLog creates a new Log based on a LogConfig. Please see the
+    documentation for types LogConfig and Log.
+
+func (c *LogConfig) NewRequestLog(version int) RequestLog
+    NewRequestLog creates a new RequestLog based on a LogConfig. Please see
+    the documentation for types LogConfig and RequestLog.
+
+type OptionalFields struct {
+    UserAgent          string `json:"user-agent,omitempty",`
+    AcceptLanguage     string `json:"accept-language,omitempty"`
+    OTRequestId        string `json:"ot-requestid,omitempty"`
+    OTUserId           string `json:"ot-userid,omitempty"`
+    OTSessionId        string `json:"ot-sessionid,omitempty"`
+    OTReferringHost    string `json:"ot-referringhost,omitempty"`
+    OTReferringService string `json:"ot-referringservice,omitempty"`
+    OTDomain           string `json:"ot-domain,omitempty"` // One of: com, couk, jp, de, commx
+}
+    OptionalFields probably need a better name. They represent the set of
+    mainly OpenTable-specific HTTP headers that ought to be set by the Front
+    Door Service.
+
+type RequestFields struct {
+    // These fields are mandatory
+    Method     string `json:"method"`
+    Url        string `json:"url"`
+    StatusCode int    `json:"status"`
+    DurationMs int    `json:"durationms"`
+    // These ones are not mandatory
+    BodySize     int64 `json:"bodysize,omitempty"`
+    ResponseSize int64 `json:"responsesize,omitempty"`
+    // The following fields are extensions to the spec, and are not mandatory
+    RequestHeaders  http.Header `json:"requestheaders,omitempty"`
+    RequestBody     interface{} `json:"requestbody,omitempty"`
+    ResponseHeaders http.Header `json:"responseheaders,omitempty"`
+    ResponseBody    interface{} `json:"responsebody,omitempty"`
+}
+    RequestFields are set on an Entry by RequestLogs. They represent the
+    standard set of fields to log when your service responds to an HTTP
+    request.
+
+type RequestLog interface {
+    // LogRequest writes a special type of Entry that includes an instance of RequestFields.
+    LogRequest(request *http.Request, statusCode int, responseSize int64, duration time.Duration) Entry
+    // contains filtered or unexported methods
+}
+    RequestLog is a special-purpose logger, designed for writing request
+    logs.
+
+type Severity int
+    Severity. One of FATAL, ERROR, WARN, INFO, TRACE
+
+func (s Severity) String() string
+    String returns the string representation of a Severity.
+
+type StandardFields struct {
+    // Type is calculated as "ServiceType-LogName-FormatVersion"
+    Type           string      `json:"type"`
+    ServiceType    string      `json:"servicetype"`
+    LogName        string      `json:"logname"`
+    FormatVersion  string      `json:"formatversion"`
+    Host           string      `json:"host"`
+    Severity       string      `json:"severity"`
+    SequenceNumber int64       `json:"sequencenumber"`
+    Timestamp      string      `json:"@timestamp"`
+    LogMessage     interface{} `json:"logmessage"`
+}
+    StandardFields are expected to always have meaningful values. They are
+    generated internally according to particular rules, so it's unlikely
+    you'll need to create them yourself.
+
+type Target interface {
+    WriteLog(interface{}) error
+}
+    Target represents a log target (somewhere where Entries should be
+    written). You can extend this package by implementing this yourself.
+
+    WriteLog() should write the log provided somewhere. This interface is
+    primarily used internally. Whenever it is called by ot-go-lib/logging,
+    it is passed a struct of the form:
+
+	{*StandardFields, *OptionalFields, *RequestFields}
+
+    Which you may use to compose logs in whatever format you like. Note: Any
+    of the fields may be nil.
+
+func NewRedisTarget(host string, port int, list string, timeout time.Duration) Target
+    NewRedisTarget creates a Target that writes logs to a Redis list as
+    JSON.
+
+SUBDIRECTORIES
+
+	Godeps
+
