@@ -15,6 +15,9 @@ func (s *State) GetPool(id string) *Pool {
 }
 
 func (s *State) SetPool(id string, p *Pool) {
+	if p.Apps == nil {
+		p.Apps = &Apps{}
+	}
 	s.pools[id] = p
 }
 

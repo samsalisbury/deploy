@@ -11,7 +11,7 @@ func (r *Root) Manifest() error {
 	return nil
 }
 
-func (p *Pools) Page() ([]string, error) {
+func (ps *Pools) Page() ([]string, error) {
 	return state.GetPoolIDs(), nil
 }
 
@@ -33,11 +33,15 @@ func (p *Pool) Write(_ *Pools, name string) error {
 	return nil
 }
 
-func (a *Apps) Page() ([]string, error) {
+func (as *Apps) Page() ([]string, error) {
 	return []string{}, nil
 }
 
-func (a *App) Manifest(_ *Apps, name string) error {
+func (a *App) Manifest(as *Apps, name string) error {
+	app, ok := (*as)[name]
+	if ok {
+		*a = *app
+	}
 	return nil
 }
 
@@ -46,11 +50,11 @@ func (a *App) Write(as *Apps, name string) error {
 	return nil
 }
 
-func (v *Versions) Page() ([]string, error) {
+func (vv *Versions) Page() ([]string, error) {
 	return []string{}, nil
 }
 
-func (v *Version) Manifest(_ *Versions, name string) error {
+func (v *Version) Manifest(vs *Versions, name string) error {
 	return nil
 }
 
